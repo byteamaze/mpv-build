@@ -16,17 +16,18 @@ fi
 OPTIONS="$OPTIONS $USER_OPTS"
 
 # Do FFmpeg's job.
-if ! ( echo "$OPTIONS" | grep -q -e --enable-openssl ) &&
-   ! ( echo "$OPTIONS" | grep -q -e --enable-gnutls ) ;
-then
-    if pkg-config gnutls ; then
-        OPTIONS="$OPTIONS --enable-gnutls"
-        echo "Auto-enabling GnuTLS."
-    elif pkg-config openssl ; then
-        OPTIONS="$OPTIONS --enable-nonfree --enable-openssl"
-        echo "Auto-enabling OpenSSL (creates a non-redistributable binary)."
-    fi
-fi
+# Disable openSSL
+#if ! ( echo "$OPTIONS" | grep -q -e --enable-openssl ) &&
+#   ! ( echo "$OPTIONS" | grep -q -e --enable-gnutls ) ;
+#then
+#    if pkg-config gnutls ; then
+#        OPTIONS="$OPTIONS --enable-gnutls"
+#        echo "Auto-enabling GnuTLS."
+#    elif pkg-config openssl ; then
+#        OPTIONS="$OPTIONS --enable-nonfree --enable-openssl"
+#        echo "Auto-enabling OpenSSL (creates a non-redistributable binary)."
+#    fi
+#fi
 
 case "$PKG_CONFIG_PATH" in
   '')
@@ -41,4 +42,4 @@ echo Using ffmpeg options: $OPTIONS
 
 mkdir -p "$BUILD"/ffmpeg_build
 cd "$BUILD"/ffmpeg_build
-"$BUILD"/ffmpeg/configure --prefix="$BUILD"/build_libs --enable-static --disable-shared $OPTIONS
+"$BUILD"/ffmpeg/configure --extra-cflags=-mmacosx-version-min=10.11 --extra-ldflags=-mmacosx-version-min=10.11 --prefix="$BUILD"/build_libs --disable-static --enable-shared $OPTIONS

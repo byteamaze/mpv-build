@@ -1,0 +1,12 @@
+disable openSSL
+disable private API: --disable-securetransport
+disable Swift
+build dylib
+macOS support: >= 10.11
+
+// files change
+ffmpeg_options
+mpv_options
+scripts/ffmpeg-config
+scripts/libass-config
+scripts/mpv-config

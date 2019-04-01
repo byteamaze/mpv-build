@@ -1,0 +1,3 @@
+--disable-swift
+--enable-libmpv-shared
+--enable-uchardet

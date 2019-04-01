@@ -21,4 +21,4 @@ esac
 echo Using mpv options: $OPTIONS
 
 cd "$BUILD"/mpv
-./waf configure $OPTIONS
+CFLAGS='-mmacosx-version-min=10.11 -g' LDFLAGS='-mmacosx-version-min=10.11' ./waf configure $OPTIONS
