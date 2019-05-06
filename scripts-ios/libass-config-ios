@@ -1,0 +1,32 @@
+#!/bin/sh
+set -e
+BUILD="$(pwd)"
+
+OPTIONS="$@"
+
+if "$BUILD"/scripts/test-libmpv ; then
+    OPTIONS="$OPTIONS --with-pic"
+fi
+
+case "$PKG_CONFIG_PATH" in
+  '')
+    export PKG_CONFIG_PATH="$BUILD/build_libs/lib/pkgconfig"
+    ;;
+  *)
+    export PKG_CONFIG_PATH="$BUILD/build_libs/lib/pkgconfig:$PKG_CONFIG_PATH"
+    ;;
+esac
+
+cd "$BUILD"/libass
+# Later libass doesn't automatically run configure with autogen.sh anymore
+./autogen.sh --prefix="$BUILD/build_libs" --libdir="$BUILD/build_libs/lib" --disable-static --enable-shared $OPTIONS
+./configure  --prefix="$BUILD/build_libs" \
+            --host="arm-apple-darwin" \
+            --libdir="$BUILD/build_libs/lib" \
+            CC="$(xcrun -find -sdk iphoneos clang)" \
+            AR="$(xcrun -find -sdk iphoneos ar)" \
+            LD="$(xcrun -find -sdk iphoneos ld)" \
+            LDFLAGS="-arch arm64 -isysroot `xcodebuild -version -sdk iphoneos Path` "  \
+            CFLAGS="-arch arm64 -isysroot `xcodebuild -version -sdk iphoneos Path` " \
+            --disable-static --disable-shared $OPTIONS
+

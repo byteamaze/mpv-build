@@ -1,0 +1,101 @@
+#!/bin/sh
+set -e
+
+BUILD="$(pwd)"
+
+USER_OPTS=""
+if test -f "$BUILD"/ffmpeg_options ; then
+    USER_OPTS="$(cat "$BUILD"/ffmpeg_options) $USER_OPTS"
+fi
+OPTIONS="--enable-cross-compile --enable-gpl --disable-debug --disable-programs --disable-doc --enable-pic --enable-libx264"
+
+OPTIONS="$OPTIONS $USER_OPTS"
+
+case "$PKG_CONFIG_PATH" in
+'')
+export PKG_CONFIG_PATH="$BUILD/build_libs/lib/pkgconfig"
+;;
+*)
+export PKG_CONFIG_PATH="$BUILD/build_libs/lib/pkgconfig:$PKG_CONFIG_PATH"
+;;
+esac
+
+# Do FFmpeg's job.
+# Disable openSSL
+#if ! ( echo "$OPTIONS" | grep -q -e --enable-openssl ) &&
+#   ! ( echo "$OPTIONS" | grep -q -e --enable-gnutls ) ;
+#then
+#    if pkg-config gnutls ; then
+#        OPTIONS="$OPTIONS --enable-gnutls"
+#        echo "Auto-enabling GnuTLS."
+#    elif pkg-config openssl ; then
+#        OPTIONS="$OPTIONS --enable-nonfree --enable-openssl"
+#        echo "Auto-enabling OpenSSL (creates a non-redistributable binary)."
+#    fi
+#fi
+
+ARCHS="arm64 armv7 x86_64 i386"
+DEPLOYMENT_TARGET="8.0"
+ARCH=""
+
+for VALID_ARCH in $ARCHS
+do
+    if [ "$VALID_ARCH" = "$1" ]
+    then
+        ARCH=$1
+    fi
+done
+
+if [ "$ARCH" = "" ]
+then
+    echo "\n================================="
+    echo "error: Invalid arch: $1"
+    echo "error: Arch must be one of $ARCHS"
+    echo "=================================\n"
+else
+    echo "config for arch $ARCH ..."
+
+    CFLAGS="-arch $ARCH"
+    if [ "$ARCH" = "i386" -o "$ARCH" = "x86_64" ]
+    then
+        PLATFORM="iPhoneSimulator"
+        CFLAGS="$CFLAGS -mios-simulator-version-min=$DEPLOYMENT_TARGET"
+    else
+        PLATFORM="iPhoneOS"
+        CFLAGS="$CFLAGS -mios-version-min=$DEPLOYMENT_TARGET -fembed-bitcode"
+        if [ "$ARCH" = "arm64" ]
+        then
+        EXPORT="GASPP_FIX_XCODE5=1"
+        fi
+    fi
+
+    XCRUN_SDK=`echo $PLATFORM | tr '[:upper:]' '[:lower:]'`
+    CC="xcrun -sdk $XCRUN_SDK clang"
+
+    # force "configure" to use "gas-preprocessor.pl" (FFmpeg 3.3)
+    if [ "$ARCH" = "arm64" ]
+    then
+        AS="gas-preprocessor.pl -arch aarch64 -- $CC"
+    else
+        AS="gas-preprocessor.pl -- $CC"
+    fi
+
+    CXXFLAGS="$CFLAGS -I$X264/include"
+    LDFLAGS="$CFLAGS -L$X264/lib"
+
+    echo Using ffmpeg options: $OPTIONS
+
+    mkdir -p "$BUILD"/ffmpeg_build
+    cd "$BUILD"/ffmpeg_build
+    "$BUILD"/ffmpeg/configure \
+            --target-os=darwin \
+            --arch=$ARCH \
+            --cc="$CC" \
+            --as="$AS" \
+            --extra-cflags="$CFLAGS" \
+            --extra-ldflags="$LDFLAGS" \
+            --prefix="$BUILD"/build_libs/"$ARCH" \
+            --enable-static --disable-shared $OPTIONS
+
+fi
+

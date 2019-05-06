@@ -1,0 +1,26 @@
+#!/bin/sh
+set -e
+
+BUILD="$(pwd)"
+
+USER_OPTS="$@"
+#if test -f "$BUILD"/mpv_options ; then
+#    USER_OPTS="$(cat "$BUILD"/mpv_options) $USER_OPTS"
+#fi
+OPTIONS="--disable-swift --disable-cplayer --disable-lcms2 --disable-lua --enable-libmpv-static --enable-ios-gl --enable-gl --disable-manpage-build"
+
+SDKPATH="$(xcodebuild -sdk iphoneos -version Path)"
+
+case "$PKG_CONFIG_PATH" in
+  '')
+    export PKG_CONFIG_PATH="$BUILD/build_libs/lib/pkgconfig"
+    ;;
+  *)
+    export PKG_CONFIG_PATH="$BUILD/build_libs/lib/pkgconfig:$PKG_CONFIG_PATH"
+    ;;
+esac
+
+echo Using mpv options: $OPTIONS
+
+cd "$BUILD"/mpv
+CFLAGS='-isysroot $SDKPATH -arch arm64 -mios-version-min=9.0.0 -fembed-bitcode' LDFLAGS='-isysroot $SDKPATH -arch arm64 -Wl,-ios_version_min,9.0.0 -lbz2' ./waf configure $OPTIONS

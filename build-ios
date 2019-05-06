@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+export LC_ALL=C
+
+#scripts-ios/fribidi-config
+#scripts-ios/fribidi-build $@
+#scripts-ios/libass-config-ios
+#scripts-ios/libass-build-ios $@
+#scripts-ios/ffmpeg-config-ios arm64
+#scripts-ios/ffmpeg-build-ios $@
+scripts-ios/mpv-config-ios
+scripts-ios/mpv-build-ios $@
